@@ -26,6 +26,8 @@
 #include "inc/hw_ints.h"
 #include "utils/uartstdio.h"
 #include "utils/cmdline.h"
+#include "flash.h"
+
 
 
 
@@ -460,6 +462,7 @@ void main(void)
     // Processor clock is calculated with (pll/2)/4 - > (400/2)/4 = 50
     // NOTE: For USB operation, it should be a minimum of 20MHz
     //
+
     SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
     //
@@ -472,8 +475,8 @@ void main(void)
     //
     // PB0 ---- USB ID ----> GND (Hardware)
     // PB1 ---- USB VBUS
-    // PD4 ---- USB D+
-    // PD5 ---- USB D-
+    // PD4 ---- USB D-
+    // PD5 ---- USB D+
     //
     SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
     SysCtlUSBPLLEnable();
@@ -669,6 +672,49 @@ void main(void)
                                     UARTprintf("Command returned error code %s\n",valueToSave);
 
                                 }
+                                SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+
+                                        uint32_t address[] = {0x01, 0x00, 0x00};
+                                        uint32_t size = 6;
+                                        uint32_t dataRx[15];
+                                        int index;
+                                        FLASHInit();
+
+                                        uint32_t dataTX[11];
+                                        dataTX[0] = g_pcTmpBuf[0];
+                                        dataTX[1] = g_pcTmpBuf[1];
+                                        dataTX[2] = g_pcTmpBuf[2];
+                                        dataTX[3] = g_pcTmpBuf[3];
+                                        dataTX[4] = g_pcTmpBuf[4];
+                                        dataTX[5] = g_pcTmpBuf[5];
+                                        dataTX[6] = g_pcTmpBuf[6];
+                                        dataTX[7] = g_pcTmpBuf[7];
+                                        dataTX[8] = g_pcTmpBuf[8];
+                                        dataTX[9] = g_pcTmpBuf[9];
+                                        dataTX[10] = g_pcTmpBuf[10];
+
+
+                                        uint32_t id[4];
+                                        FLASHReadId(id);
+                                        FLASHWriteEnable();
+                                        FLASHEraseSector(address);
+                                        while(FLASHIsBusy());
+                                        FLASHWriteEnable();
+                                        FLASHWriteAddress(address,dataTX,11);
+                                        while(FLASHIsBusy());
+                                        FLASHReadAddress(address,dataRx,11);
+
+
+
+                                        UARTprintf("Data Received Back from Flash: ");
+                                        for(index = 4; index < 15; index++){
+                                            UARTprintf("%c ", dataRx[index]);
+                                        }
+
+
+
+
+
 
 
                 //break;
