@@ -212,17 +212,32 @@ void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width)
     uint32_t command[1];
     command[0] = 0x02;
 
-    uint32_t data1[4];
-    uint32_t data2[7];
-    uint32_t i = 0;
-    for(i = 0; i < 4; i++){
-        data1[i] = data[i];
+    uint32_t i = 1;
 
-    }
-    for(i = 0; i < 7; i++){
-        data2[i] = data[i+4];
+    //Build command and address
+    uint32_t send_pulse[8];
+    send_pulse[0] = command[0];
+    for(i = 1; i < 4; i++){
+        send_pulse[i] = address[i-1];
     }
 
+    GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x0);
+    uint32_t j = 0;
+    while(j < data_width){
+        if(i == 8){
+            FLASHSendCommandNoCS(send_pulse,8);
+            FLASHClockIn(8);
+            i = 0;
+        }
+        send_pulse[i] = data[j];
+        j++;
+        i++;
+    }
+    FLASHSendCommandNoCS(send_pulse,i);
+    FLASHClockIn(i);
+    GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
+
+    /*
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x0);
     FLASHSendCommandNoCS(command,1);
     FLASHSendCommandNoCS(address,3);
@@ -232,7 +247,7 @@ void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width)
     FLASHClockIn(7);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
     uint32_t trash[1];
-
+     */
     /*while(SSIDataGetNonBlocking(SSI0_BASE, &trash[0]))
     {
     }*/
@@ -264,12 +279,32 @@ void FLASHReadAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x0);
     FLASHSendCommandNoCS(command,1);
     FLASHSendCommandNoCS(address,3);
-    FLASHClockOut(4);
-    FLASHReadResponse(data2,8);
-    FLASHClockOut(7);
+    //FLASHClockOut(4);
+    uint32_t j = 0;
+    uint32_t i = 0;
+    uint32_t start = 4;
+    while(j < data_width){
+        if(i+start == 8){
+            start = 0;
+            FLASHClockOut(i);
+            FLASHReadResponse(data2,8);
+            for(i = 0; i < 8; i++) data[j+i] = data2[i];
+            i = 0;
+            j += 8;
+        }
+        i++;
+    }
+    uint32_t left_overs = j - data_width;
+    FLASHClockOut(left_overs);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-    FLASHReadResponse(data3,7);
+    FLASHReadResponse(data2,left_overs);
+    for(i = 0; i < left_overs; i++) data[j+i] = data2[i];
+    //FLASHReadResponse(data2,8);
+    //FLASHClockOut(7);
+    //GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
+    //FLASHReadResponse(data3,7);
 
+    /*
     data[0] = data2[0];
     data[1] = data2[1];
     data[2] = data2[2];
@@ -287,7 +322,7 @@ void FLASHReadAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
     data[13] = data3[5];
     data[14] = data3[6];
     data[15] = data3[7];
-
+    */
 }
 
 void FLASHReadId(uint32_t * id){

@@ -56,7 +56,7 @@
 //
 //*****************************************************************************
 static char g_pcCwdBuf[PATH_BUF_SIZE] = "/";
-static char g_pcTmpBuf[PATH_BUF_SIZE];
+static char g_pcTmpBuf[PATH_BUF_SIZE] = "POLYGO~1.GCO";
 
 //*****************************************************************************
 //
@@ -75,7 +75,7 @@ static FILINFO g_sFileInfo;
 static FIL g_sFileObject;
 
 unsigned int valueToSave;
-
+unsigned int isRead;
 //*****************************************************************************
 //
 // A structure that holds a mapping between an FRESULT numerical code,
@@ -345,6 +345,7 @@ static int printFileStructure (void);
 
 
 
+
 //---------------------------------------------------------------------------
 // main()
 //---------------------------------------------------------------------------
@@ -360,29 +361,29 @@ Cmd_cat(int argc, char *argv[])
     // buffer that will be used to hold the file name.  The file name must be
     // fully specified, with path, to FatFs.
     //
-    if(strlen(g_pcCwdBuf) + strlen(argv[1]) + 1 + 1 > sizeof(g_pcTmpBuf))
-    {
-        UARTprintf("Resulting path name is too long\n");
-        return(0);
-    }
-
-    //
-    // Copy the current path to the temporary buffer so it can be manipulated.
-    //
-    strcpy(g_pcTmpBuf, g_pcCwdBuf);
-
-    //
-    // If not already at the root level, then append a separator.
-    //
-    if(strcmp("/", g_pcCwdBuf))
-    {
-        strcat(g_pcTmpBuf, "/");
-    }
-
-    //
-    // Now finally, append the file name to result in a fully specified file.
-    //
-    strcat(g_pcTmpBuf, argv[1]);
+//    if(strlen(g_pcCwdBuf) + strlen(argv[1]) + 1 + 1 > sizeof(g_pcTmpBuf))
+//    {
+//        UARTprintf("Resulting path name is too long\n");
+//        return(0);
+//    }
+//
+//    //
+//    // Copy the current path to the temporary buffer so it can be manipulated.
+//    //
+//    strcpy(g_pcTmpBuf, g_pcCwdBuf);
+//
+//    //
+//    // If not already at the root level, then append a separator.
+//    //
+//    if(strcmp("/", g_pcCwdBuf))
+//    {
+//        strcat(g_pcTmpBuf, "/");
+//    }
+//
+//    //
+//    // Now finally, append the file name to result in a fully specified file.
+//    //
+//    strcat(g_pcTmpBuf, argv[1]);
 
     //
     // Open the file for reading.
@@ -436,6 +437,7 @@ Cmd_cat(int argc, char *argv[])
 
     //
     // Return success.
+    isRead = 1;
     //
     return(0);
 }
@@ -454,6 +456,7 @@ void main(void)
     int nStatus;
 
 
+    char *fileName[] = {"POLYGO~1.GCO"};
 
     uint32_t ui32DriveTimeout, ui32SysClock;
 
@@ -478,11 +481,11 @@ void main(void)
     // PD4 ---- USB D-
     // PD5 ---- USB D+
     //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
+  //  SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
     SysCtlUSBPLLEnable();
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+   // SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+  //  GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
     GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
@@ -612,39 +615,37 @@ void main(void)
 
                 UARTprintf("USB Mass Storage Device Ready\r\n");
 
+                g_pcCwdBuf[0] = '/';
+                g_pcCwdBuf[1] = 0;
+
+              //  nStatus = CmdLineProcess(g_pcCmdBuf);
+
+                Cmd_cat(2, fileName);
+
                 //
                 // Getting here means the device is ready.
                 // Reset the CWD to the root directory.
                 //
-                g_pcCwdBuf[0] = '/';
-                g_pcCwdBuf[1] = 0;
 
                 //
                 // Fill the list box with the files and directories found.
                 //
-                if(!printFileStructure())
-                {
-                    //
-                    // If there were no errors reported, we are ready for
-                    // MSC operation.
-                    //
-                    g_eState = STATE_DEVICE_READY;
-                }
+//                if(!printFileStructure())
+//                {
+//                    //
+//                    // If there were no errors reported, we are ready for
+//                    // MSC operation.
+//                    //
+//                    g_eState = STATE_DEVICE_READY;
+//                }
 
                 //
                 // Set the Device Present flag.
                 //
                 g_ui32Flags = FLAGS_DEVICE_PRESENT;
 
-                UARTprintf("\n%s> ", g_pcCwdBuf);
 
-
-                UARTgets(g_pcCmdBuf, sizeof(g_pcCmdBuf));
-                nStatus = CmdLineProcess(g_pcCmdBuf);
-
-                UARTprintf("\nCommand: %s\n", g_pcCmdBuf);
-
-                if (strcmp(g_pcCmdBuf, "cat") == 0){
+                if (isRead == 1){
                                  break;
                     }
 
