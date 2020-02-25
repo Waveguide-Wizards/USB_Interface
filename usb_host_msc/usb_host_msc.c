@@ -343,8 +343,8 @@ static const char *StringFromFresult(FRESULT fresult);
 static void MSCCallback(tUSBHMSCInstance *ps32Instance, uint32_t ui32Event, void *pvData);
 static int printFileStructure (void);
 
-
-
+//Flash presets
+uint32_t address[] = {0x01, 0x00, 0x00};
 
 //---------------------------------------------------------------------------
 // main()
@@ -427,11 +427,34 @@ Cmd_cat(int argc, char *argv[])
         //
         g_pcTmpBuf[ui32BytesRead] = 0;
 
+
+        uint32_t dataRx[PATH_BUF_SIZE + 4];
+        uint32_t dataTx[PATH_BUF_SIZE];
+        int i = 0;
+        for(i=0;i < ui32BytesRead; i++){
+            dataTx[i] = g_pcTmpBuf[i];
+        }
+        FLASHInit();
+        //Clock speed used for testing
+        //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+        FLASHWriteEnable();
+        FLASHEraseSector(address);
+        while(FLASHIsBusy());
+        FLASHWriteEnable();
+        FLASHWriteAddress(address,dataTx,ui32BytesRead);
+        while(FLASHIsBusy());
+        FLASHReadAddress(address,dataRx,ui32BytesRead);
+
+        char print_string[ui32BytesRead];
+        for(i = 4; i< ui32BytesRead; i++){
+            print_string[i-4] = dataRx[i];
+        }
+        UARTprintf("Flash read: %s \n",print_string);
+
         //
         // Print the last chunk of the file that was received.
         //
-        valueToSave = g_pcTmpBuf;
-        UARTprintf("%s", g_pcTmpBuf);
+        UARTprintf("USB read: %s", g_pcTmpBuf);
     }
     while(ui32BytesRead == sizeof(g_pcTmpBuf) - 1);
 
@@ -453,6 +476,7 @@ tCmdLineEntry g_psCmdTable[] =
 void main(void)
 {
 
+    //Example Flash code for reference, do not delete
     int nStatus;
 
 
@@ -561,7 +585,33 @@ void main(void)
     //
     FileInit();
 
+    // Initialize Flash
+    FLASHInit();
+
     UARTprintf("FAT File System Module Initialized\r\n");
+
+    //Example Flash code for reference, do not delete
+    //Write to flash
+    uint32_t dataRx[8] = {0,0,0,0,0,0,0,0};
+    uint32_t dataTx[4] = {'t','e','s','t'};
+    FLASHInit();
+    //Clock speed used for testing
+    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+    FLASHWriteEnable();
+    FLASHEraseSector(address);
+    while(FLASHIsBusy());
+    FLASHWriteEnable();
+    FLASHWriteAddress(address,dataTx,4);
+    while(FLASHIsBusy());
+    FLASHReadAddress(address,dataRx,8);
+
+    char print_string[4];
+    uint32_t i = 0;
+    for(i = 4; i< 8; i++){
+        print_string[i-4] = dataRx[i];
+    }
+    UARTprintf("Flash read: %s \n",print_string);
+
 
     //
     // Enter an (almost) infinite loop for reading and processing commands from
@@ -621,7 +671,7 @@ void main(void)
               //  nStatus = CmdLineProcess(g_pcCmdBuf);
 
                 Cmd_cat(2, fileName);
-
+                while(1);
                 //
                 // Getting here means the device is ready.
                 // Reset the CWD to the root directory.
@@ -673,50 +723,6 @@ void main(void)
                                     UARTprintf("Command returned error code %s\n",valueToSave);
 
                                 }
-                                SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-
-                                        uint32_t address[] = {0x01, 0x00, 0x00};
-                                        uint32_t size = 6;
-                                        uint32_t dataRx[15];
-                                        int index;
-                                        FLASHInit();
-
-                                        uint32_t dataTX[11];
-                                        dataTX[0] = g_pcTmpBuf[0];
-                                        dataTX[1] = g_pcTmpBuf[1];
-                                        dataTX[2] = g_pcTmpBuf[2];
-                                        dataTX[3] = g_pcTmpBuf[3];
-                                        dataTX[4] = g_pcTmpBuf[4];
-                                        dataTX[5] = g_pcTmpBuf[5];
-                                        dataTX[6] = g_pcTmpBuf[6];
-                                        dataTX[7] = g_pcTmpBuf[7];
-                                        dataTX[8] = g_pcTmpBuf[8];
-                                        dataTX[9] = g_pcTmpBuf[9];
-                                        dataTX[10] = g_pcTmpBuf[10];
-
-
-                                        uint32_t id[4];
-                                        FLASHReadId(id);
-                                        FLASHWriteEnable();
-                                        FLASHEraseSector(address);
-                                        while(FLASHIsBusy());
-                                        FLASHWriteEnable();
-                                        FLASHWriteAddress(address,dataTX,11);
-                                        while(FLASHIsBusy());
-                                        FLASHReadAddress(address,dataRx,11);
-
-
-
-                                        UARTprintf("Data Received Back from Flash: ");
-                                        for(index = 4; index < 15; index++){
-                                            UARTprintf("%c ", dataRx[index]);
-                                        }
-
-
-
-
-
-
 
                 //break;
             }

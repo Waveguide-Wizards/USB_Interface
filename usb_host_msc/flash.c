@@ -66,10 +66,6 @@ void FLASHSendCommand(uint32_t * data, uint32_t size){
     }
 
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-
-    while(SSIBusy(SSI1_BASE))
-    {
-    }
 }
 
 void FLASHSendCommandNoCS(uint32_t * data, uint32_t size){
@@ -81,10 +77,6 @@ void FLASHSendCommandNoCS(uint32_t * data, uint32_t size){
         {
         }
 
-    }
-
-    while(SSIBusy(SSI1_BASE))
-    {
     }
 }
 
@@ -100,10 +92,6 @@ void FLASHClockOut(uint32_t size){
         }
 
     }
-
-    while(SSIBusy(SSI1_BASE))
-    {
-    }
 }
 
 void FLASHReadResponse(uint32_t * data, uint32_t size){
@@ -112,14 +100,16 @@ void FLASHReadResponse(uint32_t * data, uint32_t size){
     {
 
         SSIDataGet(SSI1_BASE, &data[index]);
-
+        while(SSIBusy(SSI1_BASE))
+        {
+        }
         data[index] &= 0x00FF;
     }
 }
 
 void FLASHClockIn(uint32_t size){
     volatile uint32_t index = 0;
-    uint32_t dummy[1];
+    volatile uint32_t dummy[1];
     for(index = 0; index < size; index++)
     {
 
@@ -128,7 +118,6 @@ void FLASHClockIn(uint32_t size){
         {
         }
     }
-
 }
 
 
@@ -141,6 +130,7 @@ void FLASHWriteEnable(){
 }
 
 void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
+    //data[data_width]
     uint32_t command[1];
     command[0] = 0x02;
 
@@ -170,35 +160,6 @@ void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width)
     FLASHSendCommandNoCS(send_pulse,i);
     FLASHClockIn(i);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-
-    /*
-    GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x0);
-    uint32_t j = 0;
-    while(j < data_width){
-        if(i == 8){
-            FLASHSendCommandNoCS(send_pulse,8);
-            FLASHClockIn(8);
-            i = 0;
-        }
-        send_pulse[i] = data[j];
-        j++;
-        i++;
-    }
-    FLASHSendCommandNoCS(send_pulse,i);
-    FLASHClockIn(i);
-    GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-<<<<<<< HEAD
-    uint32_t trash[1];
-     */
-    /*while(SSIDataGetNonBlocking(SSI0_BASE, &trash[0]))
-    {
-    }*/
-
-    //FLASHClockIn(8);
-
-    //FLASHClockIn(8);
-
-
 }
 
 int FLASHIsBusy(){
@@ -210,11 +171,12 @@ int FLASHIsBusy(){
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
     uint32_t data[2];
     FLASHReadResponse(data,2);
-    return data[1]  & 0x1 ;
-
+    volatile int ret = data[1] & 0x1;
+    return ret;
 }
 
 void FLASHReadAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
+    //data[data_width + 4]
     uint32_t command[1];
     uint32_t data2[8];
     uint32_t data3[8];
@@ -242,31 +204,6 @@ void FLASHReadAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
     FLASHReadResponse(data2,left_overs);
     for(i = 0; i < left_overs; i++) data[j+i] = data2[i];
-
-    //FLASHReadResponse(data2,8);
-    //FLASHClockOut(7);
-    //GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-    //FLASHReadResponse(data3,7);
-
-    /*
-    data[0] = data2[0];
-    data[1] = data2[1];
-    data[2] = data2[2];
-    data[3] = data2[3];
-    data[4] = data2[4];
-    data[5] = data2[5];
-    data[6] = data2[6];
-    data[7] = data2[7];
-
-    data[8] = data3[0];
-    data[9] = data3[1];
-    data[10] = data3[2];
-    data[11] = data3[3];
-    data[12] = data3[4];
-    data[13] = data3[5];
-    data[14] = data3[6];
-    data[15] = data3[7];
-    */
 }
 
 void FLASHReadId(uint32_t * id){
@@ -284,6 +221,7 @@ void FLASHEraseSector(uint32_t * address){
     FLASHSendCommandNoCS(command,1);
     FLASHSendCommandNoCS(address,3);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
-
     FLASHClockIn(4);
+    volatile int ret = 0;
+    for(ret = 0; ret < 400000; ret++);
 }
