@@ -427,6 +427,7 @@ Cmd_cat(int argc, char *argv[])
         //
         g_pcTmpBuf[ui32BytesRead] = 0;
 
+        UARTprintf("USB read: %s", g_pcTmpBuf);
 
         uint32_t dataRx[PATH_BUF_SIZE + 4];
         uint32_t dataTx[PATH_BUF_SIZE];
@@ -454,7 +455,7 @@ Cmd_cat(int argc, char *argv[])
         //
         // Print the last chunk of the file that was received.
         //
-        UARTprintf("USB read: %s", g_pcTmpBuf);
+
     }
     while(ui32BytesRead == sizeof(g_pcTmpBuf) - 1);
 
@@ -505,11 +506,11 @@ void main(void)
     // PD4 ---- USB D-
     // PD5 ---- USB D+
     //
-  //  SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
     SysCtlUSBPLLEnable();
 
-   // SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-  //  GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
     GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
@@ -579,38 +580,38 @@ void main(void)
     // Initialize the USB controller for host operation.
     //
     USBHCDInit(0, g_pHCDPool, HCD_MEMORY_SIZE);
-
-    //
-    // Initialize the fat file system.
-    //
-    FileInit();
-
-    // Initialize Flash
-    FLASHInit();
-
-    UARTprintf("FAT File System Module Initialized\r\n");
-
-    //Example Flash code for reference, do not delete
-    //Write to flash
-    uint32_t dataRx[8] = {0,0,0,0,0,0,0,0};
-    uint32_t dataTx[4] = {'t','e','s','t'};
-    FLASHInit();
-    //Clock speed used for testing
-    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-    FLASHWriteEnable();
-    FLASHEraseSector(address);
-    while(FLASHIsBusy());
-    FLASHWriteEnable();
-    FLASHWriteAddress(address,dataTx,4);
-    while(FLASHIsBusy());
-    FLASHReadAddress(address,dataRx,8);
-
-    char print_string[4];
-    uint32_t i = 0;
-    for(i = 4; i< 8; i++){
-        print_string[i-4] = dataRx[i];
-    }
-    UARTprintf("Flash read: %s \n",print_string);
+//
+//    //
+//    // Initialize the fat file system.
+//    //
+   FileInit();
+//
+//    // Initialize Flash
+//    FLASHInit();
+//
+//    UARTprintf("FAT File System Module Initialized\r\n");
+//
+//    //Example Flash code for reference, do not delete
+//    //Write to flash
+//    uint32_t dataRx[8] = {0,0,0,0,0,0,0,0};
+//    uint32_t dataTx[4] = {'t','e','s','t'};
+//    FLASHInit();
+//    //Clock speed used for testing
+//    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+//    FLASHWriteEnable();
+//    FLASHEraseSector(address);
+//    while(FLASHIsBusy());
+//    FLASHWriteEnable();
+//    FLASHWriteAddress(address,dataTx,4);
+//    while(FLASHIsBusy());
+//    FLASHReadAddress(address,dataRx,8);
+//
+//    char print_string[4];
+//    uint32_t i = 0;
+//    for(i = 4; i< 8; i++){
+//        print_string[i-4] = dataRx[i];
+//    }
+//    UARTprintf("Flash read: %s \n",print_string);
 
 
     //
