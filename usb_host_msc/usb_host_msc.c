@@ -343,6 +343,7 @@ static const char *StringFromFresult(FRESULT fresult);
 static void MSCCallback(tUSBHMSCInstance *ps32Instance, uint32_t ui32Event, void *pvData);
 static int printFileStructure (void);
 
+//TODO: increment flash every read
 //Flash presets
 uint32_t address[] = {0x01, 0x00, 0x00};
 
@@ -425,6 +426,7 @@ Cmd_cat(int argc, char *argv[])
         // Null terminate the last block that was read to make it a null
         // terminated string that can be used with printf.
         //
+        //TODO: get rid of for final version
         g_pcTmpBuf[ui32BytesRead] = 0;
 
 
@@ -443,12 +445,14 @@ Cmd_cat(int argc, char *argv[])
         FLASHWriteEnable();
         FLASHWriteAddress(address,dataTx,ui32BytesRead);
         while(FLASHIsBusy());
-        FLASHReadAddress(address,dataRx,ui32BytesRead);
-
-        char print_string[ui32BytesRead];
-        for(i = 4; i< ui32BytesRead; i++){
+        FLASHReadAddress(address,dataRx,ui32BytesRead+4);
+        char print_string[PATH_BUF_SIZE];
+        for(i = 4; i< ui32BytesRead+4; i++){
             print_string[i-4] = dataRx[i];
         }
+
+        //TODO: get rid of for final version
+        print_string[ui32BytesRead] = 0;
         UARTprintf("Flash read: %s \n",print_string);
 
         //
@@ -556,7 +560,7 @@ void main(void)
     UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
 
     // Enable all Interrupts.
-    IntMasterEnable();
+    // IntMasterEnable();
 
     UARTprintf("Hardware Initialized\r\n");
 
