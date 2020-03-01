@@ -429,24 +429,28 @@ Cmd_cat(int argc, char *argv[])
         //TODO: get rid of for final version
         g_pcTmpBuf[ui32BytesRead] = 0;
 
-        UARTprintf("USB read: %s", g_pcTmpBuf);
+        //UARTprintf("USB read: %s", g_pcTmpBuf);
 
         uint32_t dataRx[PATH_BUF_SIZE + 4];
         uint32_t dataTx[PATH_BUF_SIZE];
-        int i = 0;
-        for(i=0;i < ui32BytesRead; i++){
-            dataTx[i] = g_pcTmpBuf[i];
-        }
+        volatile int i = 0;
+        dataRx[4]=255;
         FLASHInit();
         //Clock speed used for testing
         //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-        FLASHWriteEnable();
-        FLASHEraseSector(address);
-        while(FLASHIsBusy());
-        FLASHWriteEnable();
-        FLASHWriteAddress(address,dataTx,ui32BytesRead);
-        while(FLASHIsBusy());
-        FLASHReadAddress(address,dataRx,ui32BytesRead+4);
+        do{
+            for(i=0;i < ui32BytesRead; i++){
+                dataTx[i] = g_pcTmpBuf[i];
+            }
+            FLASHWriteEnable();
+            FLASHEraseSector(address);
+            while(FLASHIsBusy());
+            FLASHWriteEnable();
+            FLASHWriteAddress(address,dataTx,ui32BytesRead);
+            while(FLASHIsBusy());
+            FLASHReadAddress(address,dataRx,ui32BytesRead+4);
+        }while(dataRx[4] == 255);
+
         char print_string[PATH_BUF_SIZE];
         for(i = 4; i< ui32BytesRead+4; i++){
             print_string[i-4] = dataRx[i];
