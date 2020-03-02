@@ -485,6 +485,7 @@ void main(void)
     int nStatus;
 
 
+
     char *fileName[] = {"POLYGO~1.GCO"};
 
     uint32_t ui32DriveTimeout, ui32SysClock;
@@ -497,6 +498,14 @@ void main(void)
 
     SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
+     SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
+     SysCtlUSBPLLEnable();
+
+     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+     GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+     GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
     //
     // Get the System Clock Rate
     // 50 MHz
@@ -510,14 +519,6 @@ void main(void)
     // PD4 ---- USB D-
     // PD5 ---- USB D+
     //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
-    SysCtlUSBPLLEnable();
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-    GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     //
     // Initialize the USB stack for host mode only.
@@ -561,7 +562,7 @@ void main(void)
     UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
 
     // Enable all Interrupts.
-    // IntMasterEnable();
+    IntMasterEnable();
 
     UARTprintf("Hardware Initialized\r\n");
 
@@ -582,6 +583,8 @@ void main(void)
 
     //
     // Initialize the USB controller for host operation.
+    USBHCDPowerConfigInit(0, USBHCD_VBUS_AUTO_HIGH | USBHCD_VBUS_FILTER);
+
     //
     USBHCDInit(0, g_pHCDPool, HCD_MEMORY_SIZE);
 //
@@ -589,11 +592,12 @@ void main(void)
 //    // Initialize the fat file system.
 //    //
    FileInit();
+   UARTprintf("FAT File System Module Initialized\r\n");
 //
 //    // Initialize Flash
 //    FLASHInit();
 //
-//    UARTprintf("FAT File System Module Initialized\r\n");
+
 //
 //    //Example Flash code for reference, do not delete
 //    //Write to flash
@@ -670,13 +674,13 @@ void main(void)
 
                 UARTprintf("USB Mass Storage Device Ready\r\n");
 
-                g_pcCwdBuf[0] = '/';
-                g_pcCwdBuf[1] = 0;
 
-              //  nStatus = CmdLineProcess(g_pcCmdBuf);
+//                g_cCwdBuf[0] = '/';
+//                g_cCwdBuf[1] = 0;
+              //  Cmd_cat(2, fileName);
 
-                Cmd_cat(2, fileName);
-                while(1);
+                //USBHMSCDriveClose(g_psMSCInstance);
+               // while(1);
                 //
                 // Getting here means the device is ready.
                 // Reset the CWD to the root directory.
@@ -685,51 +689,22 @@ void main(void)
                 //
                 // Fill the list box with the files and directories found.
                 //
-//                if(!printFileStructure())
-//                {
-//                    //
-//                    // If there were no errors reported, we are ready for
-//                    // MSC operation.
-//                    //
-//                    g_eState = STATE_DEVICE_READY;
-//                }
+                if(!printFileStructure())
+                {
+                    //
+                    // If there were no errors reported, we are ready for
+                    // MSC operation.
+                    //
+                    g_eState = STATE_DEVICE_READY;
+                    Cmd_cat(2, fileName);
+
+                }
 
                 //
                 // Set the Device Present flag.
                 //
                 g_ui32Flags = FLAGS_DEVICE_PRESENT;
-
-
-                if (isRead == 1){
-                                 break;
-                    }
-
-                                // Handle the case of bad command.
-                                //
-                                if(nStatus == CMDLINE_BAD_CMD)
-                                {
-                                    UARTprintf("Bad command!\n");
-                                }
-
-                                //
-                                // Handle the case of too many arguments.
-                                //
-                                else if(nStatus == CMDLINE_TOO_MANY_ARGS)
-                                {
-                                    UARTprintf("Too many arguments for command processor!\n");
-                                }
-
-                                //
-                                // Otherwise the command was executed.  Print the error code if one was
-                                // returned.
-                                //
-                                else if(nStatus != 0)
-                                {
-                                    UARTprintf("Command returned error code %s\n",valueToSave);
-
-                                }
-
-                //break;
+                break;
             }
 
             //
@@ -1095,6 +1070,7 @@ static int printFileStructure (void) {
 
     //
     // Made it to here, return with no errors.
+
     //
     return(0);
 }

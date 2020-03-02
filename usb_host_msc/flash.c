@@ -127,6 +127,8 @@ void FLASHWriteEnable(){
     dataTx[0] = 0x06;
     FLASHSendCommand(dataTx,1);
     FLASHReadResponse(dataRx,1);
+   // volatile int ret = 0;
+   //    for(ret = 0; ret < 240000; ret++);
 }
 
 void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
