@@ -1,111 +1,13 @@
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
 
-//------------------------------------------
-// TivaWare Header Files
-//------------------------------------------
-#include "inc/hw_memmap.h"
-#include "inc/hw_types.h"
-#include "driverlib/fpu.h"
-#include "driverlib/gpio.h"
-#include "driverlib/interrupt.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/systick.h"
-#include "driverlib/udma.h"
-#include "driverlib/rom.h"
-#include "driverlib/pin_map.h"
-#include "utils/ustdlib.h"
-#include "usblib/usblib.h"
-#include "usblib/usbmsc.h"
-#include "usblib/host/usbhost.h"
-#include "usblib/host/usbhmsc.h"
-#include "third_party/fatfs/src/ff.h"
-#include "third_party/fatfs/src/diskio.h"
-#include "driverlib/uart.h"
-#include "inc/hw_ints.h"
-#include "utils/uartstdio.h"
-#include "utils/cmdline.h"
-#include "flash.h"
+//---------------------------------------------------------------------------
+// main()
+//---------------------------------------------------------------------------
+#include "usb_host_msc.h"
 
-
-
-
-//
-// Defines the size of the buffers that hold the path, or temporary
-// data from the USB disk.  There are two buffers allocated of this size.
-// The buffer size must be large enough to hold the int32_test expected
-// full path name, including the file name, and a trailing null character.
-//
-//*****************************************************************************
-#define PATH_BUF_SIZE   80
-#define NUM_SSI_DATA            6
-//*****************************************************************************
-//
-// Defines the number of times to call to check if the attached device is
-// ready.
-//
-//*****************************************************************************
-#define USBMSC_DRIVE_RETRY      4
-#define CMD_BUF_SIZE            64
-
-//*****************************************************************************
-//
-// This buffer holds the full path to the current working directory.
-// Initially it is root ("/").
-//
-//*****************************************************************************
-static char g_pcCwdBuf[PATH_BUF_SIZE] = "/";
-static char g_pcTmpBuf[PATH_BUF_SIZE] = "POLYGO~1.GCO";
-
-//*****************************************************************************
-//
-// The buffer that holds the command line.
-//
-//*****************************************************************************
-static char g_pcCmdBuf[CMD_BUF_SIZE];
-//*****************************************************************************
-//
-// The following are data structures used by FatFs.
-//
-//*****************************************************************************
-static FATFS g_sFatFs;
-static DIR g_sDirObject;
-static FILINFO g_sFileInfo;
-static FIL g_sFileObject;
-
-unsigned int valueToSave;
+uint32_t address[] = {0x01, 0x00, 0x00};
 unsigned int isRead = 0;
-uint32_t ui32SysClock;
-//*****************************************************************************
-//
-// A structure that holds a mapping between an FRESULT numerical code,
-// and a string representation.  FRESULT codes are returned from the FatFs
-// FAT file system driver.
-//
-//*****************************************************************************
+tUSBHMSCInstance *g_psMSCInstance = 0;
 
-typedef struct
-{
-    FRESULT fresult;
-    char *pcResultStr;
-}
-tFresultString;
-
-//*****************************************************************************
-//
-// A macro to make it easy to add result codes to the table.
-//
-//*****************************************************************************
-#define FRESULT_ENTRY(f)        { (f), (#f) }
-
-//*****************************************************************************
-//
-// A table that holds a mapping between the numerical FRESULT code and
-// it's name as a string.  This is used for looking up error codes and
-// providing a human-readable string.
-//
-//*****************************************************************************
 tFresultString g_sFresultStrings[] =
 {
     FRESULT_ENTRY(FR_OK),
@@ -130,266 +32,67 @@ tFresultString g_sFresultStrings[] =
     FRESULT_ENTRY(FR_INVALID_PARAMETER),
 };
 
-//*****************************************************************************
-//
-// A macro that holds the number of result codes.
-//
-//*****************************************************************************
-#define NUM_FRESULT_CODES (sizeof(g_sFresultStrings) / sizeof(tFresultString))
-
-//*****************************************************************************
-//
-// Error reasons returned by ChangeToDirectory().
-//
-//*****************************************************************************
-#define NAME_TOO_LONG_ERROR 1
-#define OPENDIR_ERROR       2
-
-//*****************************************************************************
-//
-// The number of SysTick ticks per second.
-//
-//*****************************************************************************
-#define TICKS_PER_SECOND 100
-#define MS_PER_SYSTICK (1000 / TICKS_PER_SECOND)
-
-//*****************************************************************************
-//
-// A counter for system clock ticks, used for simple timing.
-//
-//*****************************************************************************
-static uint32_t g_ui32SysTickCount;
-
-//*****************************************************************************
-//
-// Holds global flags for the system.
-//
-//*****************************************************************************
-static uint32_t g_ui32Flags = 0;
-
-
-//*****************************************************************************
-//
-// Storage for the filenames.
-//
-//*****************************************************************************
-#define NUM_LIST_STRINGS 48
-const char *g_ppcDirListStrings[NUM_LIST_STRINGS];
-
-//*****************************************************************************
-//
-// Storage for the names of the files in the current directory.  Filenames
-// are stored in format "(D) filename.ext" for directories or "(F) filename.ext"
-// for files.
-//
-//*****************************************************************************
-#define MAX_FILENAME_STRING_LEN (4 + 8 + 1 + 3 + 1)
-char g_pcFilenames[NUM_LIST_STRINGS][MAX_FILENAME_STRING_LEN];
-
-//*****************************************************************************
-//
-// Storage for the strings which appear in the status box at the bottom of the
-// display.
-//
-//****************************************************************************
-#define NUM_STATUS_STRINGS 6
-#define MAX_STATUS_STRING_LEN (36 + 1)
-char g_pcStatus[NUM_STATUS_STRINGS][MAX_STATUS_STRING_LEN];
-
-
-//*****************************************************************************
-//
-// Flag indicating that some USB device is connected.
-//
-//*****************************************************************************
-#define FLAGS_DEVICE_PRESENT    0x00000001
-
-//*****************************************************************************
-//
-// Hold the current state for the application.
-//
-//*****************************************************************************
-volatile enum
-{
-    //
-    // No device is present.
-    //
-    STATE_NO_DEVICE,
-
-    //
-    // Mass storage device is being enumerated.
-    //
-    STATE_DEVICE_ENUM,
-
-    //
-    // Mass storage device is ready.
-    //
-    STATE_DEVICE_READY,
-
-    //
-    // An unsupported device has been attached.
-    //
-    STATE_UNKNOWN_DEVICE,
-
-    //
-    // A mass storage device was connected but failed to ever report ready.
-    //
-    STATE_TIMEOUT_DEVICE,
-
-    //
-    // A power fault has occurred.
-    //
-    STATE_POWER_FAULT
-}
-g_eState;
-
-//*****************************************************************************
-//
-// The size of the host controller's memory pool in bytes.
-//
-//*****************************************************************************
-#define HCD_MEMORY_SIZE         128
-
-//*****************************************************************************
-//
-// The memory pool to provide to the Host controller driver.
-//
-//*****************************************************************************
-uint8_t g_pHCDPool[HCD_MEMORY_SIZE];
-
-
-//*****************************************************************************
-//
-// The instance data for the MSC driver.
-//
-//*****************************************************************************
-tUSBHMSCInstance *g_psMSCInstance = 0;
-
-//*****************************************************************************
-//
-// Declare the USB Events driver interface.
-//
-//*****************************************************************************
 DECLARE_EVENT_DRIVER(g_sUSBEventDriver, 0, 0, USBHCDEvents);
 
-//*****************************************************************************
-//
-// The global that holds all of the host drivers in use in the application.
-// In this case, only the MSC class is loaded.
-//
-//*****************************************************************************
 static tUSBHostClassDriver const * const g_ppHostClassDrivers[] =
 {
     &g_sUSBHostMSCClassDriver,
     &g_sUSBEventDriver
 };
 
-//*****************************************************************************
-//
-// This global holds the number of class drivers in the g_ppHostClassDrivers
-// list.
-//
-//*****************************************************************************
 static const uint32_t g_ui32NumHostClassDrivers =
     sizeof(g_ppHostClassDrivers) / sizeof(tUSBHostClassDriver *);
 
-//*****************************************************************************
-//
-// The control table used by the uDMA controller.  This table must be aligned
-// to a 1024 byte boundary.  In this application uDMA is only used for USB,
-// so only the first 6 channels are needed.
-//
-//*****************************************************************************
-#if defined(ewarm)
-#pragma data_alignment=1024
-tDMAControlTable g_psDMAControlTable[6];
-#elif defined(ccs)
-#pragma DATA_ALIGN(g_psDMAControlTable, 1024)
-tDMAControlTable g_psDMAControlTable[6];
-#else
-tDMAControlTable g_psDMAControlTable[6] __attribute__ ((aligned(1024)));
-#endif
 
-//*****************************************************************************
-//
-// Define a pair of buffers that are used for holding path information.
-// The buffer size must be large enough to hold the longest expected
-// full path name, including the file name, and a trailing null character.
-// The initial path is set to root "/".
-//
-//*****************************************************************************
-#define PATH_BUF_SIZE   80
-
-//*****************************************************************************
-//
-// Define the maximum number of files that can appear at any directory level.
-// This is used for allocating space for holding the file information.
-// Define the maximum depth of subdirectories, also used to allocating space
-// for directory structures.
-// Define the maximum number of characters allowed to be stored for a file
-// name.
-//
-//*****************************************************************************
-#define MAX_FILES_PER_MENU 64
-#define MAX_SUBDIR_DEPTH 32
+void main(void)
+{
+	char *fileName[] = {"POLYGO~1.GCO"};
+	//initialize USB
+	usbInit();
 
 
-//----------------------------------------
-// Prototypes
-//----------------------------------------
-void hardware_init(void);
-static bool FileInit(void);
-void SysTickHandler(void);
-static const char *StringFromFresult(FRESULT fresult);
-static void MSCCallback(tUSBHMSCInstance *ps32Instance, uint32_t ui32Event, void *pvData);
-static int printFileStructure (void);
+	uartInit();
+    usbConnect();
 
-//TODO: increment flash every read
-//Flash presets
-uint32_t address[] = {0x01, 0x00, 0x00};
 
-//---------------------------------------------------------------------------
-// main()
-//---------------------------------------------------------------------------
-int
-Cmd_cat(int argc, char *argv[])
+    printFileStructure();
+
+
+    //READ FILE !!!
+    read_file(2, fileName);
+
+
+
+
+}
+
+void uartInit(void)
+{
+
+
+    // Initialize UART0 (brought out to the console via the DEBUG USB port)
+    // RX --- PA0
+    // TX --- PA1
+    // NOTE: Uses the UARTstdio utility
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    GPIOPinConfigure(GPIO_PA0_U0RX);
+    GPIOPinConfigure(GPIO_PA1_U0TX);
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    UARTClockSourceSet(UART0_BASE, (UART_CLOCK_SYSTEM));
+    UARTStdioConfig(0, 115200, SysCtlClockGet());
+    IntEnable(INT_UART0);
+    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+}
+
+int read_file(int argc, char *argv[])
 {
     FRESULT fresult;
     uint32_t ui32BytesRead;
 
-    //
-    // First, check to make sure that the current path (CWD), plus the file
-    // name, plus a separator and trailing null, will all fit in the temporary
-    // buffer that will be used to hold the file name.  The file name must be
-    // fully specified, with path, to FatFs.
-    //
-//    if(strlen(g_pcCwdBuf) + strlen(argv[1]) + 1 + 1 > sizeof(g_pcTmpBuf))
-//    {
-//        UARTprintf("Resulting path name is too long\n");
-//        return(0);
-//    }
-//
-//    //
-//    // Copy the current path to the temporary buffer so it can be manipulated.
-//    //
-//    strcpy(g_pcTmpBuf, g_pcCwdBuf);
-//
-//    //
-//    // If not already at the root level, then append a separator.
-//    //
-//    if(strcmp("/", g_pcCwdBuf))
-//    {
-//        strcat(g_pcTmpBuf, "/");
-//    }
-//
-//    //
-//    // Now finally, append the file name to result in a fully specified file.
-//    //
-//    strcat(g_pcTmpBuf, argv[1]);
 
-    //
-    // Open the file for reading.
-    //
+
    fresult = f_open(&g_sFileObject, g_pcTmpBuf, FA_READ);
 
     //
@@ -545,7 +248,7 @@ void usbInit(void){
 }
 
 void usbConnect(void){
-	char *fileName[] = {"POLYGO~1.GCO"};
+
 	uint32_t ui32DriveTimeout;
 
 
@@ -623,22 +326,12 @@ void usbConnect(void){
 
                 UARTprintf("USB Mass Storage Device Ready\r\n");
 
-                g_pcCwdBuf[0] = '/';
-                g_pcCwdBuf[1] = 0;
-
-                //READ FILE !!!
-
-                Cmd_cat(2, fileName);
-
-
-
                 g_ui32Flags = FLAGS_DEVICE_PRESENT;
 
 
-                if (isRead == 1){ // does this actually do anything
 
-                        return;
-                    }
+                return;
+
 
                 //break;
             }
@@ -720,39 +413,6 @@ void usbConnect(void){
     }
 
 }
-
-void main(void)
-{
-
-	//initialize USB
-	usbInit();
-
-
-
-    // Initialize UART0 (brought out to the console via the DEBUG USB port)
-    // RX --- PA0
-    // TX --- PA1
-    // NOTE: Uses the UARTstdio utility
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTClockSourceSet(UART0_BASE, (UART_CLOCK_SYSTEM));
-    UARTStdioConfig(0, 115200, SysCtlClockGet());
-    IntEnable(INT_UART0);
-    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-
-    // Enable all Interrupts. TRY TO COMMENT THIS BACK IN
-    // IntMasterEnable();
-
-    usbConnect();
-
-
-}
-
-
 //*****************************************************************************
 //
 // Initializes the file system module.
@@ -962,6 +622,8 @@ void USBHCDEvents(void *pvData) {
 // Prints the file structure on UART.
 //*****************************************************************************
 static int printFileStructure (void) {
+	 g_pcCwdBuf[0] = '/';
+	 g_pcCwdBuf[1] = 0;
 
     uint32_t ui32ItemCount;
     FRESULT fresult;

@@ -108,7 +108,7 @@ void FLASHReadResponse(uint32_t * data, uint32_t size){
 
 void FLASHClockIn(uint32_t size){
     volatile uint32_t index = 0;
-    volatile uint32_t dummy[1];
+    uint32_t dummy[1];
     for(index = 0; index < size; index++)
     {
 
@@ -178,7 +178,6 @@ void FLASHReadAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
     //data[data_width + 4]
     uint32_t command[1];
     uint32_t data2[8];
-    uint32_t data3[8];
     command[0] = 0x03;
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x0);
     FLASHSendCommandNoCS(command,1);
