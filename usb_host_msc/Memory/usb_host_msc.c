@@ -75,7 +75,8 @@ static FILINFO g_sFileInfo;
 static FIL g_sFileObject;
 
 unsigned int valueToSave;
-unsigned int isRead;
+unsigned int isRead = 0;
+uint32_t ui32SysClock;
 //*****************************************************************************
 //
 // A structure that holds a mapping between an FRESULT numerical code,
@@ -429,24 +430,37 @@ Cmd_cat(int argc, char *argv[])
         //TODO: get rid of for final version
         g_pcTmpBuf[ui32BytesRead] = 0;
 
-        UARTprintf("USB read: %s", g_pcTmpBuf);
+        //UARTprintf("USB read: %s", g_pcTmpBuf);
 
         uint32_t dataRx[PATH_BUF_SIZE + 4];
         uint32_t dataTx[PATH_BUF_SIZE];
-        int i = 0;
-        for(i=0;i < ui32BytesRead; i++){
-            dataTx[i] = g_pcTmpBuf[i];
-        }
+        volatile int i = 0;
+        dataRx[4]=255;
         FLASHInit();
         //Clock speed used for testing
         //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-        FLASHWriteEnable();
-        FLASHEraseSector(address);
-        while(FLASHIsBusy());
-        FLASHWriteEnable();
-        FLASHWriteAddress(address,dataTx,ui32BytesRead);
-        while(FLASHIsBusy());
-        FLASHReadAddress(address,dataRx,ui32BytesRead+4);
+        int error = 0;
+
+        do{
+            error = 0;
+            for(i=0;i < ui32BytesRead; i++){
+                dataTx[i] = g_pcTmpBuf[i];
+            }
+            FLASHWriteEnable();
+            FLASHEraseSector(address);
+            while(FLASHIsBusy());
+            FLASHWriteEnable();
+            FLASHWriteAddress(address,dataTx,ui32BytesRead);
+            while(FLASHIsBusy());
+            FLASHReadAddress(address,dataRx,ui32BytesRead+4);
+            for(i=0;i < ui32BytesRead; i++){
+                if(dataRx[i+4] != (uint32_t) g_pcTmpBuf[i]){
+                    error = 1;
+                    break;
+                }
+            }
+        }while(error);
+
         char print_string[PATH_BUF_SIZE];
         for(i = 4; i< ui32BytesRead+4; i++){
             print_string[i-4] = dataRx[i];
@@ -454,7 +468,7 @@ Cmd_cat(int argc, char *argv[])
 
         //TODO: get rid of for final version
         print_string[ui32BytesRead] = 0;
-        UARTprintf("Flash read: %s \n",print_string);
+        UARTprintf(print_string);
 
         //
         // Print the last chunk of the file that was received.
@@ -467,28 +481,11 @@ Cmd_cat(int argc, char *argv[])
     // Return success.
     isRead = 1;
     //
-    return(0);
+    return(isRead);
 }
 
-tCmdLineEntry g_psCmdTable[] =
-{
-
-    { "cat",    Cmd_cat,    "Show contents of a text file" },
-    { 0, 0, 0 }
-};
-
-
-void main(void)
-{
-
-    //Example Flash code for reference, do not delete
+void usbInit(void){
     int nStatus;
-
-
-
-    char *fileName[] = {"POLYGO~1.GCO"};
-
-    uint32_t ui32DriveTimeout, ui32SysClock;
 
     //
     // Set the main system clock to run from the PLL at 50MHz
@@ -498,14 +495,6 @@ void main(void)
 
     SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 
-     SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
-     SysCtlUSBPLLEnable();
-
-     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-     GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-     GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
     //
     // Get the System Clock Rate
     // 50 MHz
@@ -519,6 +508,14 @@ void main(void)
     // PD4 ---- USB D-
     // PD5 ---- USB D+
     //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
+    SysCtlUSBPLLEnable();
+
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    GPIOPinTypeUSBAnalog(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+    GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     //
     // Initialize the USB stack for host mode only.
@@ -545,24 +542,13 @@ void main(void)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
     uDMAEnable();
     uDMAControlBaseSet(g_psDMAControlTable);
+}
 
-    // Initialize UART0 (brought out to the console via the DEBUG USB port)
-    // RX --- PA0
-    // TX --- PA1
-    // NOTE: Uses the UARTstdio utility
-    //
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTClockSourceSet(UART0_BASE, (UART_CLOCK_SYSTEM));
-    UARTStdioConfig(0, 115200, SysCtlClockGet());
-    IntEnable(INT_UART0);
-    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+void usbConnect(void){
+	char *fileName[] = {"POLYGO~1.GCO"};
+	uint32_t ui32DriveTimeout;
 
-    // Enable all Interrupts.
-    IntMasterEnable();
+
 
     UARTprintf("Hardware Initialized\r\n");
 
@@ -583,49 +569,12 @@ void main(void)
 
     //
     // Initialize the USB controller for host operation.
-    USBHCDPowerConfigInit(0, USBHCD_VBUS_AUTO_HIGH | USBHCD_VBUS_FILTER);
-
     //
     USBHCDInit(0, g_pHCDPool, HCD_MEMORY_SIZE);
-//
-//    //
-//    // Initialize the fat file system.
-//    //
-   FileInit();
-   UARTprintf("FAT File System Module Initialized\r\n");
-//
-//    // Initialize Flash
-//    FLASHInit();
-//
 
-//
-//    //Example Flash code for reference, do not delete
-//    //Write to flash
-//    uint32_t dataRx[8] = {0,0,0,0,0,0,0,0};
-//    uint32_t dataTx[4] = {'t','e','s','t'};
-//    FLASHInit();
-//    //Clock speed used for testing
-//    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-//    FLASHWriteEnable();
-//    FLASHEraseSector(address);
-//    while(FLASHIsBusy());
-//    FLASHWriteEnable();
-//    FLASHWriteAddress(address,dataTx,4);
-//    while(FLASHIsBusy());
-//    FLASHReadAddress(address,dataRx,8);
-//
-//    char print_string[4];
-//    uint32_t i = 0;
-//    for(i = 4; i< 8; i++){
-//        print_string[i-4] = dataRx[i];
-//    }
-//    UARTprintf("Flash read: %s \n",print_string);
+    //Initialize File system
+    FileInit();
 
-
-    //
-    // Enter an (almost) infinite loop for reading and processing commands from
-    // the user.
-    //
     while(1)
     {
         //
@@ -674,37 +623,24 @@ void main(void)
 
                 UARTprintf("USB Mass Storage Device Ready\r\n");
 
+                g_pcCwdBuf[0] = '/';
+                g_pcCwdBuf[1] = 0;
 
-//                g_cCwdBuf[0] = '/';
-//                g_cCwdBuf[1] = 0;
-              //  Cmd_cat(2, fileName);
+                //READ FILE !!!
 
-                //USBHMSCDriveClose(g_psMSCInstance);
-               // while(1);
-                //
-                // Getting here means the device is ready.
-                // Reset the CWD to the root directory.
-                //
+                Cmd_cat(2, fileName);
 
-                //
-                // Fill the list box with the files and directories found.
-                //
-                if(!printFileStructure())
-                {
-                    //
-                    // If there were no errors reported, we are ready for
-                    // MSC operation.
-                    //
-                    g_eState = STATE_DEVICE_READY;
-                    Cmd_cat(2, fileName);
 
-                }
 
-                //
-                // Set the Device Present flag.
-                //
                 g_ui32Flags = FLAGS_DEVICE_PRESENT;
-                break;
+
+
+                if (isRead == 1){ // does this actually do anything
+
+                        return;
+                    }
+
+                //break;
             }
 
             //
@@ -782,6 +718,38 @@ void main(void)
 
 
     }
+
+}
+
+void main(void)
+{
+
+	//initialize USB
+	usbInit();
+
+
+
+    // Initialize UART0 (brought out to the console via the DEBUG USB port)
+    // RX --- PA0
+    // TX --- PA1
+    // NOTE: Uses the UARTstdio utility
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    GPIOPinConfigure(GPIO_PA0_U0RX);
+    GPIOPinConfigure(GPIO_PA1_U0TX);
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    UARTClockSourceSet(UART0_BASE, (UART_CLOCK_SYSTEM));
+    UARTStdioConfig(0, 115200, SysCtlClockGet());
+    IntEnable(INT_UART0);
+    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+
+    // Enable all Interrupts. TRY TO COMMENT THIS BACK IN
+    // IntMasterEnable();
+
+    usbConnect();
+
+
 }
 
 
@@ -1070,8 +1038,6 @@ static int printFileStructure (void) {
 
     //
     // Made it to here, return with no errors.
-
     //
     return(0);
 }
-

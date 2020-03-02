@@ -1,4 +1,3 @@
-
 /*
  * flash.c
  *
@@ -127,8 +126,6 @@ void FLASHWriteEnable(){
     dataTx[0] = 0x06;
     FLASHSendCommand(dataTx,1);
     FLASHReadResponse(dataRx,1);
-   // volatile int ret = 0;
-   //    for(ret = 0; ret < 240000; ret++);
 }
 
 void FLASHWriteAddress(uint32_t * address, uint32_t * data, uint32_t data_width){
@@ -224,6 +221,5 @@ void FLASHEraseSector(uint32_t * address){
     FLASHSendCommandNoCS(address,3);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x2);
     FLASHClockIn(4);
-    volatile int ret = 0;
-    for(ret = 0; ret < 400000; ret++);
+    SysCtlDelay(400000/3);
 }
