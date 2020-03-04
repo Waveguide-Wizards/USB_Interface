@@ -251,6 +251,7 @@ extern tUSBHMSCInstance *g_psMSCInstance;
 //
 //*****************************************************************************
 
+//DECLARE_EVENT_DRIVER(g_sUSBEventDriver, 0, 0, USBHCDEvents);
 
 //*****************************************************************************
 //
@@ -259,6 +260,13 @@ extern tUSBHMSCInstance *g_psMSCInstance;
 //
 //*****************************************************************************
 
+/*
+static tUSBHostClassDriver const * const g_ppHostClassDrivers[] =
+{
+    &g_sUSBHostMSCClassDriver,
+    &g_sUSBEventDriver
+};
+*/
 
 //*****************************************************************************
 //
@@ -266,7 +274,10 @@ extern tUSBHMSCInstance *g_psMSCInstance;
 // list.
 //
 //*****************************************************************************
-
+/*
+static const uint32_t g_ui32NumHostClassDrivers =
+    sizeof(g_ppHostClassDrivers) / sizeof(tUSBHostClassDriver *);
+*/
 //*****************************************************************************
 //
 // The control table used by the uDMA controller.  This table must be aligned

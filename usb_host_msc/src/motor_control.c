@@ -11,8 +11,8 @@
 #include <math.h>
 
 /*  A P P L I C A T I O N   I N C L U D E S   */
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/bsp.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/motor_control.h"
+#include "include/bsp.h"
+#include "include/motor_control.h"
 
 /*  D R I V E R   L I B   */
 #include "driverlib/gpio.h"
