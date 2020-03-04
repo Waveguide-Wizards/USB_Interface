@@ -35,6 +35,13 @@ void ResetISR(void);
 static void NmiSR(void);
 static void FaultISR(void);
 static void IntDefaultHandler(void);
+extern void xPortPendSVHandler(void);
+extern void vPortSVCHandler(void);
+extern void xPortSysTickHandler(void);
+extern void PWM0Gen0IntHandler(void);
+extern void PWM0Gen1IntHandler(void);
+extern void PWM0Gen3IntHandler(void);
+extern void GPIO_A_IntHandler(void);
 
 //*****************************************************************************
 //
@@ -50,6 +57,8 @@ extern void _c_int00(void);
 //
 //*****************************************************************************
 extern uint32_t __STACK_TOP;
+
+
 
 //*****************************************************************************
 //
