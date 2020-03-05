@@ -60,7 +60,7 @@ extern void Timer0IntHandler(void);
 //
 //*****************************************************************************
 extern uint32_t __STACK_TOP;
-
+extern void TouchScreenIntHandler(void);
 
 
 //*****************************************************************************
@@ -93,11 +93,11 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
-    IntDefaultHandler,                      // SVCall handler
+	vPortSVCHandler,                      // SVCall handler
     IntDefaultHandler,                      // Debug monitor handler
     0,                                      // Reserved
-    IntDefaultHandler,                      // The PendSV handler
-    IntDefaultHandler,                         // The SysTick handler
+	xPortPendSVHandler,                      // The PendSV handler
+	xPortSysTickHandler,                         // The SysTick handler
     IntDefaultHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
@@ -115,7 +115,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 0
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
-    IntDefaultHandler,                      // ADC Sequence 3
+	TouchScreenIntHandler,                  // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
 	IntDefaultHandler,                      // Timer 0 subtimer A
 	Timer0IntHandler,                      // Timer 0 subtimer B
@@ -309,5 +309,5 @@ IntDefaultHandler(void)
     //
     // Go into an infinite loop.
     //
-    g_ui32SysTickCount++;
+   // g_ui32SysTickCount++;
 }

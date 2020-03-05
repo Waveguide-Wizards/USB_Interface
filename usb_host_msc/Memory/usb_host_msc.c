@@ -234,9 +234,9 @@ void usbInit(void){
     // Configure SysTick for a 100Hz interrupt.
     // Systick Period = 5000000 / 100 -> 500000
     //
-    SysTickPeriodSet(SysCtlClockGet() / TICKS_PER_SECOND);
-    SysTickEnable();
-    SysTickIntEnable();
+//    SysTickPeriodSet(SysCtlClockGet() / TICKS_PER_SECOND);
+//    SysTickEnable();
+//    SysTickIntEnable();
 
     //
     // Enable the uDMA controller and set up the control table base.

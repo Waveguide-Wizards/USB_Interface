@@ -47,6 +47,7 @@ void *malloc( size_t xSize );
 /*  G L O B A L S   */
 volatile eState printer_state;
 QueueHandle_t motor_instruction_queue;
+uint32_t file_index = 0xFFFF;
 
 /*  T A S K   H A N D L E S   */
 TaskHandle_t thConfig = NULL;
@@ -78,7 +79,7 @@ void main(void)
 	    //
 	    // Enable processor interrupts.
 	    //
-	  //  IntMasterEnable();
+	    IntMasterEnable();
 
 	    //
 	    // Configure the two 32-bit periodic timers.
@@ -101,6 +102,11 @@ void main(void)
 	    //
 	    TimerEnable(TIMER0_BASE, TIMER_B);
 
+//	    // these init's might need to be moved to main if it crashes the OS
+//	    usbInit();
+	    uartInit(); //only necessary for integration tests
+
+//
 //
 //	uint32_t id[4] = {0,0,0,0};
 //	  FLASHInit();
@@ -122,9 +128,9 @@ void main(void)
 //	  read_file(2, fileName);
 //
 //}
-    // set clock source to 16MHz external oscillator, use PLL and divide by 10 to get 20MHz
+//     set clock source to 16MHz external oscillator, use PLL and divide by 10 to get 20MHz
 
-  //  configASSERT(SysCtlClockGet() == 50000000);
+    configASSERT(SysCtlClockGet() == 50000000);
 
     // Create Tasks
     BaseType_t UIReturned = xTaskCreate(prv_UI, "UI", 400, (void *)NULL, 1, &thUITask);

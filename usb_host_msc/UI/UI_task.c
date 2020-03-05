@@ -24,6 +24,7 @@ extern TaskHandle_t thMemoryTask;
 extern bool begin_usb_connect;
 extern bool begin_file_transfer;
 extern uint32_t file_sel_index;
+extern uint32_t file_index;
 
 void prv_UI(void *pvParameters)
 {
@@ -69,15 +70,18 @@ void prv_UI(void *pvParameters)
             if(begin_file_transfer == true)
             {
                 begin_file_transfer = false;
-                printer_state = USB_Transfer;
+//                printer_state = USB_Transfer;
+                file_index = 0;
                 xTaskNotify(thMemoryTask, file_sel_index, eSetValueWithOverwrite);
+//                xTaskNotifyGive(thMemoryTask);
             }
             break;
 
         case USB_Transfer:
             /* wait for memory transfer to complete */
-            ret = xTaskNotifyWait(UI_CLEAR_BITS_ON_ENTRY, UI_CLEAR_BITS_ON_EXIT, &error_code, UI_NOTIFY_WAIT_TIME);
-            if(ret == pdPASS)
+//            ret = xTaskNotifyWait(UI_CLEAR_BITS_ON_ENTRY, UI_CLEAR_BITS_ON_EXIT, &error_code, UI_NOTIFY_WAIT_TIME);
+            ret = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        	if(ret == pdPASS)
             {
                 printer_state = Printing;
                 vTaskSuspend(thMemoryTask);

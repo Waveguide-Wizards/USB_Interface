@@ -31,13 +31,13 @@ extern tCanvasWidget g_psPanelsUI[];
 //******************************************************************************
 const char UI_Filenames[UI_MAX_FILE_NUM][UI_MAX_FILENAME_LEN] =
 {
-     "NULLNULLNULLNULL",
-     "NULLNULLNULLNULL",
-     "NULLNULLNULLNULL"
+     "polygons.gcode  ",
+     "NULL            ",
+     "NULL            "
 };
 #define UI_NUM_FILES (sizeof(UI_Filenames) / sizeof(UI_Filenames[0]))
 
-const uint32_t bytesTx = 420;
+const uint32_t bytesTx = 1612;
 
 //*****************************************************************************
 // The names for each of the panels, which is displayed at the bottom of the
@@ -481,11 +481,11 @@ void UI_OnMemCompletePaint(tWidget *psWidget, tContext *psContext)
     GrStringDrawCentered(psContext, "File Transfer Complete!", -1,
                          GrContextDpyWidthGet(psContext) / 2, 32, 0);
 
-    char transferData[40];
-    sprintf(transferData, "Bytes Transferred: %u", bytesTx);
-
-    GrStringDrawCentered(psContext, transferData, -1,
-                         GrContextDpyWidthGet(psContext) / 2, 74, 0);
+//    char transferData[40];
+//    sprintf(transferData, "Bytes Transferred: %u", bytesTx);
+//
+//    GrStringDrawCentered(psContext, transferData, -1,
+//                         GrContextDpyWidthGet(psContext) / 2, 74, 0);
 }
 
 //*****************************************************************************
@@ -895,8 +895,8 @@ void UI_UpdateFileNames(void)
 void UI_MemTestComplete(uint32_t bytes_written)
 {
     //Error code DNE
-    if(bytes_written == 0)
-        return;
+//    if(bytes_written == 0)
+//        return;
 
     // Remove the current panel.
     WidgetRemove((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
