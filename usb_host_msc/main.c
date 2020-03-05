@@ -29,7 +29,7 @@
 #include "include/heater_control.h"
 #include "include/led.h"
 #include "include/motor_control.h"
-//#include "include/UI_task.h"
+#include "UI/UI_task.h"
 
 
 /*  F R E E R T O S   H O O K S   */

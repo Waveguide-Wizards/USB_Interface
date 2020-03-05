@@ -75,5 +75,9 @@
 			<name>SW_ROOT</name>
 			<value>$%7BPARENT-5-ORIGINAL_PROJECT_ROOT%7D</value>
 		</variable>
+		<variable>
+			<name>SW_ROOT1</name>
+			<value>$%7BTI_PRODUCTS_DIR%7D/tivaware_c_series_2_1_4_178</value>
+		</variable>
 	</variableList>
 </projectDescription>
