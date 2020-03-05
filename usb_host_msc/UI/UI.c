@@ -8,7 +8,7 @@
 // *** Includes
 //
 #include "UI.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/Memory/usb_host_msc.h"
+#include "Memory/usb_host_msc.h"
 
 // *** Variables
 //
