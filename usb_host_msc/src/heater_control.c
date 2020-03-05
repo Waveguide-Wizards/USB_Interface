@@ -11,10 +11,10 @@
 #include <math.h>
 
 /*  A P P L I C A T I O N   I N C L U D E S   */
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/bsp.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/heater_control.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/pid.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/error_checking.h"
+#include "include/bsp.h"
+#include "include/heater_control.h"
+#include "include/pid.h"
+#include "include/error_checking.h"
 
 /*  D R I V E R   L I B   */
 //#include "tm4c123gh6pm.h"

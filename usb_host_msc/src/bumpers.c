@@ -8,11 +8,11 @@
 #include <stdbool.h>
 
 /*  A P P L I C A T I O N    I N C L U D E S   */
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/bumpers.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/bsp.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/calibration.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/error_checking.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/motor_control.h"
+#include "include/bumpers.h"
+#include "include/bsp.h"
+#include "include/calibration.h"
+#include "include/error_checking.h"
+#include "include/motor_control.h"
 
 /*  F R E E R T O S   I N C L U D E S   */
 #include "FreeRTOS.h"

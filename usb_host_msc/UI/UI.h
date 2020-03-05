@@ -40,8 +40,8 @@
 #include "grlib/radiobutton.h"
 #include "grlib/slider.h"
 //
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/UI/drivers/images.h"
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/error_checking.h"
+#include "UI/drivers/images.h"
+#include "include/error_checking.h"
 
 // *** Defines
 //

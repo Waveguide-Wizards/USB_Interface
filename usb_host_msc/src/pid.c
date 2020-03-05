@@ -5,7 +5,7 @@
  *      Author: jack
  */
 
-#include "/Users/margalitnoa/git/USB_Interface_3/usb_host_msc/include/pid.h"
+#include "include/pid.h"
 
 void PID_init(PID_t * pid, float Kp, float Ki, float Kd, float ref, float iteration_time) {
     pid->Kp = Kp;
