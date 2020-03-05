@@ -29,7 +29,12 @@
 #include "include/heater_control.h"
 #include "include/led.h"
 #include "include/motor_control.h"
+
 #include "UI/UI_task.h"
+
+//#include "include/UI_task.h"
+#include "memory/flash.h"
+
 
 
 /*  F R E E R T O S   H O O K S   */
@@ -60,6 +65,10 @@ TaskHandle_t thUITask = NULL;
 /*   --- M A I N ---   */
 void main(void)
 {
+    uint32_t id[4] = {0,0,0,0};
+    FLASHInit();
+    FLASHReadId(id);
+
 	char *fileName[] = {"POLYGO~1.GCO"};
 	//initialize USB
 	usbInit();
