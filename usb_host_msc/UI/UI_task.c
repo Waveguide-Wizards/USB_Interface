@@ -47,6 +47,10 @@ void prv_UI(void *pvParameters)
                 begin_usb_connect = false;
                 printer_state = Storage_Device_Inserted;
                 xTaskNotifyGive(thMemoryTask);
+
+                //XXX For Development
+//                UI_UpdateFileNames();
+//                printer_state = Select_Print;
             }
             break;
 

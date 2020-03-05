@@ -1,3 +1,4 @@
+
 //*****************************************************************************
 //
 // startup_ccs.c - Startup code for use with TI's Code Composer Studio.
@@ -25,6 +26,7 @@
 #include <stdint.h>
 #include "inc/hw_nvic.h"
 #include "inc/hw_types.h"
+#include "Memory/usb_host_msc.h"
 
 //*****************************************************************************
 //
@@ -51,6 +53,7 @@ extern void GPIO_A_IntHandler(void);
 //*****************************************************************************
 extern void _c_int00(void);
 
+extern void Timer0IntHandler(void);
 //*****************************************************************************
 //
 // Linker variable that marks the top of the stack.
@@ -65,7 +68,7 @@ extern uint32_t __STACK_TOP;
 // External declarations for the interrupt handlers used by the application.
 //
 //*****************************************************************************
-extern void SysTickHandler(void);
+//extern void SysTickHandler(void);
 extern void USB0OTGModeIntHandler(void);
 
 //*****************************************************************************
@@ -94,7 +97,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // Debug monitor handler
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
-    SysTickHandler,                         // The SysTick handler
+    IntDefaultHandler,                         // The SysTick handler
     IntDefaultHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
@@ -114,12 +117,12 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    IntDefaultHandler,                      // Timer 0 subtimer A
-    IntDefaultHandler,                      // Timer 0 subtimer B
+	IntDefaultHandler,                      // Timer 0 subtimer A
+	Timer0IntHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     IntDefaultHandler,                      // Timer 2 subtimer A
-    IntDefaultHandler,                      // Timer 2 subtimer B
+	IntDefaultHandler,                      // Timer 2 subtimer B
     IntDefaultHandler,                      // Analog Comparator 0
     IntDefaultHandler,                      // Analog Comparator 1
     IntDefaultHandler,                      // Analog Comparator 2
@@ -306,7 +309,5 @@ IntDefaultHandler(void)
     //
     // Go into an infinite loop.
     //
-    while(1)
-    {
-    }
+    g_ui32SysTickCount++;
 }

@@ -441,13 +441,42 @@ static bool FileInit(void) {
 // counter that is used for timing.
 //
 //*****************************************************************************
-void SysTickHandler(void) {
-    //
-    // Update our tick counter.
-    //
-    g_ui32SysTickCount++;
-}
+//void SysTickHandler(void) {
+//    //
+//    // Update our tick counter.
+//    //
+//    g_ui32SysTickCount++;
+//}
 
+
+void
+Timer0IntHandler(void)
+{
+    char cOne, cTwo;
+
+    //
+    // Clear the timer interrupt.
+    //
+    ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMB_TIMEOUT);
+
+    //
+    // Toggle the flag for the first timer.
+    //
+    HWREGBITW(&g_ui32Flags, 0) ^= 1;
+
+    //
+    // Use the flags to Toggle the LED for this timer
+    //
+
+    //
+    // Update the interrupt status on the display.
+    //
+    IntMasterDisable();
+
+    g_ui32SysTickCount++;
+    IntMasterEnable();
+
+}
 //*****************************************************************************
 //
 // This function returns a string representation of an error code

@@ -7,6 +7,7 @@
 
 // *** Includes
 //
+#include <string.h>
 #include "UI.h"
 #include "Memory/usb_host_msc.h"
 
@@ -28,7 +29,7 @@ extern tCanvasWidget g_psPanelsUI[];
 //******************************************************************************
 //  Temporary File Names
 //******************************************************************************
-const char * UI_Filenames[] =
+const char UI_Filenames[UI_MAX_FILE_NUM][UI_MAX_FILENAME_LEN] =
 {
      "NULLNULLNULLNULL",
      "NULLNULLNULLNULL",
@@ -433,9 +434,9 @@ void UI_OnFilesystemPaint(tWidget *psWidget, tContext *psContext)
     GrContextFontSet(psContext, &g_sFontCm18);
     GrContextForegroundSet(psContext, ClrSilver);
 
-    GrStringDrawCentered(psContext, UI_Filenames[0], -1, 140, 50, 0);
-    GrStringDrawCentered(psContext, UI_Filenames[1], -1, 140, 105, 0);
-    GrStringDrawCentered(psContext, UI_Filenames[2], -1, 140, 160, 0);
+    GrStringDrawCentered(psContext, UI_Filenames[0], -1, 200, 50, 0);
+    GrStringDrawCentered(psContext, UI_Filenames[1], -1, 200, 105, 0);
+    GrStringDrawCentered(psContext, UI_Filenames[2], -1, 200, 160, 0);
 }
 
 //*****************************************************************************
@@ -700,17 +701,17 @@ void UI_SelectMemTest(tWidget *psWidget)
 
     begin_usb_connect = true;
 
-    // Remove the current panel.
-    WidgetRemove((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
-
-    // Add and draw the new panel.
-    g_ui32PanelUI = 3;
-    WidgetAdd(WIDGET_ROOT, (tWidget *)(g_psPanelsUI + g_ui32PanelUI));
-    WidgetPaint((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
-
-    // Set the title of this panel.
-    CanvasTextSet(&g_sTitleUI, g_pcPanei32NamesUI[g_ui32PanelUI]);
-    WidgetPaint((tWidget *)&g_sTitleUI);
+//    // Remove the current panel.
+//    WidgetRemove((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+//
+//    // Add and draw the new panel.
+//    g_ui32PanelUI = 3;
+//    WidgetAdd(WIDGET_ROOT, (tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+//    WidgetPaint((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+//
+//    // Set the title of this panel.
+//    CanvasTextSet(&g_sTitleUI, g_pcPanei32NamesUI[g_ui32PanelUI]);
+//    WidgetPaint((tWidget *)&g_sTitleUI);
 }
 
 //*****************************************************************************
@@ -872,7 +873,23 @@ void UI_HandleErrors(uint32_t err)
 
 void UI_UpdateFileNames(void)
 {
-    //TODO StrCpy to your local buffers
+    uint8_t i = 0;
+    for(i = 0; i < UI_MAX_FILE_NUM; i++)
+    {
+        strcpy(UI_Filenames[i], g_pcFilenames[i]);
+    }
+
+    // Remove the current panel.
+    WidgetRemove((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+
+    // Add and draw the new panel.
+    g_ui32PanelUI = 3;
+    WidgetAdd(WIDGET_ROOT, (tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+    WidgetPaint((tWidget *)(g_psPanelsUI + g_ui32PanelUI));
+
+    // Set the title of this panel.
+    CanvasTextSet(&g_sTitleUI, g_pcPanei32NamesUI[g_ui32PanelUI]);
+    WidgetPaint((tWidget *)&g_sTitleUI);
 }
 
 void UI_MemTestComplete(uint32_t bytes_written)

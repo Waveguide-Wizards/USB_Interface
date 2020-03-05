@@ -30,6 +30,8 @@
 #include "utils/uartstdio.h"
 #include "utils/cmdline.h"
 #include "flash.h"
+#include "driverlib/timer.h"
+#include "inc/hw_timer.h"
 
 
 
@@ -138,7 +140,7 @@ extern tFresultString g_sFresultStrings[];
 // A counter for system clock ticks, used for simple timing.
 //
 //*****************************************************************************
-static uint32_t g_ui32SysTickCount;
+ uint32_t g_ui32SysTickCount;
 
 //*****************************************************************************
 //
@@ -329,6 +331,7 @@ extern uint32_t address[];
 void hardware_init(void);
 static bool FileInit(void);
 void SysTickHandler(void);
+void Timer2B(void);
 static const char *StringFromFresult(FRESULT fresult);
 static void MSCCallback(tUSBHMSCInstance *ps32Instance, uint32_t ui32Event, void *pvData);
 int printFileStructure (void);
